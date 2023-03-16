@@ -16,8 +16,8 @@ https://arxiv.org/pdf/2108.10531.pdf
 '''
 import argparse
 import torch
-import global_constants as settings
-from kbnet import train
+from kbnet import global_constants as settings
+from kbnet.kbnet import train
 
 
 parser = argparse.ArgumentParser()

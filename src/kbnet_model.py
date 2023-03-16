@@ -15,7 +15,7 @@ https://arxiv.org/pdf/2108.10531.pdf
 }
 '''
 import torch, torchvision
-import log_utils, losses, networks, net_utils
+from kbnet import log_utils, losses, networks, net_utils
 
 
 EPSILON = 1e-8

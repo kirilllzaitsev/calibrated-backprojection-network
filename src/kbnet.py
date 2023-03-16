@@ -19,13 +19,13 @@ import numpy as np
 import torch
 from PIL import Image
 from torch.utils.tensorboard import SummaryWriter
-import datasets, data_utils, eval_utils
-from log_utils import log
-from kbnet_model import KBNetModel
-from posenet_model import PoseNetModel
-import global_constants as settings
-from transforms import Transforms
-from net_utils import OutlierRemoval
+from kbnet import datasets, data_utils, eval_utils
+from kbnet.log_utils import log
+from kbnet.kbnet_model import KBNetModel
+from kbnet.posenet_model import PoseNetModel
+from kbnet import global_constants as settings
+from kbnet.transforms import Transforms
+from kbnet.net_utils import OutlierRemoval
 
 
 def train(train_image_path,

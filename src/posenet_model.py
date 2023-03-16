@@ -15,7 +15,7 @@ https://arxiv.org/pdf/2108.10531.pdf
 }
 '''
 import torch
-import networks
+from kbnet import networks
 
 
 class PoseNetModel(object):

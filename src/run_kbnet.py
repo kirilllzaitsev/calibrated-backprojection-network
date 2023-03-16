@@ -15,8 +15,8 @@ https://arxiv.org/pdf/2108.10531.pdf
 }
 '''
 import argparse
-import global_constants as settings
-from kbnet import run
+from kbnet import global_constants as settings
+from kbnet.kbnet import run
 
 
 parser = argparse.ArgumentParser()

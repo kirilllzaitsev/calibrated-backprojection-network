@@ -15,7 +15,7 @@ https://arxiv.org/pdf/2108.10531.pdf
 }
 '''
 import torch
-import net_utils
+from kbnet import net_utils
 
 
 '''

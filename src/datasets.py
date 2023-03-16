@@ -16,7 +16,7 @@ https://arxiv.org/pdf/2108.10531.pdf
 '''
 import numpy as np
 import torch.utils.data
-import data_utils
+from kbnet import data_utils
 
 
 def load_image_triplet(path, normalize=True):
