@@ -17,4 +17,6 @@ setup(
     url='https://github.com/alexklwong/calibrated-backprojection-network',
     package_dir={"kbnet": "src"},
     package_data={"": ["."]},
-    packages=['kbnet'])
+    packages=['kbnet'],
+    zip_safe=False
+)
