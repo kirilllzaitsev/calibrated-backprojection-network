@@ -1,4 +1,4 @@
-'''
+"""
 Author: Alex Wong <alexw@cs.ucla.edu>
 
 If you use this code, please cite the following paper:
@@ -13,16 +13,18 @@ https://arxiv.org/pdf/2108.10531.pdf
   pages={12747--12756},
   year={2021}
 }
-'''
+"""
 import torch
 from kbnet import net_utils
 
 
-'''
+"""
 Encoder architectures
-'''
+"""
+
+
 class KBNetEncoder(torch.nn.Module):
-    '''
+    """
     Calibrated backprojection network (KBNet) encoder with skip connections
 
     Arg(s):
@@ -48,19 +50,22 @@ class KBNetEncoder(torch.nn.Module):
             kaiming_normal, kaiming_uniform, xavier_normal, xavier_uniform
         activation_func : func
             activation function after convolution
-    '''
-    def __init__(self,
-                 input_channels_image=3,
-                 input_channels_depth=1,
-                 n_filters_image=[48, 96, 192, 384, 384],
-                 n_filters_depth=[16, 32, 64, 128, 128],
-                 n_filters_fused=[48, 96, 192, 384, 384],
-                 n_convolutions_image=[1, 1, 1, 1, 1],
-                 n_convolutions_depth=[1, 1, 1, 1, 1],
-                 n_convolutions_fused=[1, 1, 1, 1, 1],
-                 resolutions_backprojection=[0, 1, 2],
-                 weight_initializer='kaiming_uniform',
-                 activation_func='leaky_relu'):
+    """
+
+    def __init__(
+        self,
+        input_channels_image=3,
+        input_channels_depth=1,
+        n_filters_image=[48, 96, 192, 384, 384],
+        n_filters_depth=[16, 32, 64, 128, 128],
+        n_filters_fused=[48, 96, 192, 384, 384],
+        n_convolutions_image=[1, 1, 1, 1, 1],
+        n_convolutions_depth=[1, 1, 1, 1, 1],
+        n_convolutions_fused=[1, 1, 1, 1, 1],
+        resolutions_backprojection=[0, 1, 2],
+        weight_initializer="kaiming_uniform",
+        activation_func="leaky_relu",
+    ):
         super(KBNetEncoder, self).__init__()
 
         self.resolutions_backprojection = resolutions_backprojection
@@ -87,7 +92,8 @@ class KBNetEncoder(torch.nn.Module):
                 kernel_size=3,
                 stride=1,
                 weight_initializer=weight_initializer,
-                activation_func=activation_func)
+                activation_func=activation_func,
+            )
 
             self.conv0_depth = net_utils.Conv2d(
                 in_channels=input_channels_depth,
@@ -95,7 +101,8 @@ class KBNetEncoder(torch.nn.Module):
                 kernel_size=3,
                 stride=1,
                 weight_initializer=weight_initializer,
-                activation_func=activation_func)
+                activation_func=activation_func,
+            )
 
             in_channels_image = n_filters_image[n]
             in_channels_depth = n_filters_depth[n]
@@ -112,7 +119,8 @@ class KBNetEncoder(torch.nn.Module):
                 n_convolution_depth=n_convolutions_depth[n],
                 n_convolution_fused=n_convolutions_fused[n],
                 weight_initializer=weight_initializer,
-                activation_func=activation_func)
+                activation_func=activation_func,
+            )
         else:
             self.conv1_image = net_utils.VGGNetBlock(
                 in_channels=input_channels_image,
@@ -120,7 +128,8 @@ class KBNetEncoder(torch.nn.Module):
                 n_convolution=n_convolutions_image[n],
                 stride=2,
                 weight_initializer=weight_initializer,
-                activation_func=activation_func)
+                activation_func=activation_func,
+            )
 
             self.conv1_depth = net_utils.VGGNetBlock(
                 in_channels=input_channels_depth,
@@ -128,20 +137,20 @@ class KBNetEncoder(torch.nn.Module):
                 n_convolution=n_convolutions_depth[n],
                 stride=2,
                 weight_initializer=weight_initializer,
-                activation_func=activation_func)
+                activation_func=activation_func,
+            )
 
         # Resolution: 1/2 -> 1/4
         n = 1
 
-        in_channels_image = n_filters_image[n-1]
-        in_channels_depth = n_filters_depth[n-1]
+        in_channels_image = n_filters_image[n - 1]
+        in_channels_depth = n_filters_depth[n - 1]
 
         if n in resolutions_backprojection:
-
             if n - 1 in resolutions_backprojection:
-                in_channels_fused = n_filters_image[n-1] + n_filters_fused[n-1]
+                in_channels_fused = n_filters_image[n - 1] + n_filters_fused[n - 1]
             else:
-                in_channels_fused = n_filters_image[n-1]
+                in_channels_fused = n_filters_image[n - 1]
 
             self.calibrated_backprojection2 = net_utils.CalibratedBackprojectionBlock(
                 in_channels_image=in_channels_image,
@@ -154,7 +163,8 @@ class KBNetEncoder(torch.nn.Module):
                 n_convolution_depth=n_convolutions_depth[n],
                 n_convolution_fused=n_convolutions_fused[n],
                 weight_initializer=weight_initializer,
-                activation_func=activation_func)
+                activation_func=activation_func,
+            )
         else:
             self.conv2_image = net_utils.VGGNetBlock(
                 in_channels=in_channels_image,
@@ -162,7 +172,8 @@ class KBNetEncoder(torch.nn.Module):
                 n_convolution=n_convolutions_image[n],
                 stride=2,
                 weight_initializer=weight_initializer,
-                activation_func=activation_func)
+                activation_func=activation_func,
+            )
 
             self.conv2_depth = net_utils.VGGNetBlock(
                 in_channels=in_channels_depth,
@@ -170,20 +181,20 @@ class KBNetEncoder(torch.nn.Module):
                 n_convolution=n_convolutions_depth[n],
                 stride=2,
                 weight_initializer=weight_initializer,
-                activation_func=activation_func)
+                activation_func=activation_func,
+            )
 
         # Resolution: 1/4 -> 1/8
         n = 2
 
-        in_channels_image = n_filters_image[n-1]
-        in_channels_depth = n_filters_depth[n-1]
+        in_channels_image = n_filters_image[n - 1]
+        in_channels_depth = n_filters_depth[n - 1]
 
         if n in resolutions_backprojection:
-
             if n - 1 in resolutions_backprojection:
-                in_channels_fused = n_filters_image[n-1] + n_filters_fused[n-1]
+                in_channels_fused = n_filters_image[n - 1] + n_filters_fused[n - 1]
             else:
-                in_channels_fused = n_filters_image[n-1]
+                in_channels_fused = n_filters_image[n - 1]
 
             self.calibrated_backprojection3 = net_utils.CalibratedBackprojectionBlock(
                 in_channels_image=in_channels_image,
@@ -196,7 +207,8 @@ class KBNetEncoder(torch.nn.Module):
                 n_convolution_depth=n_convolutions_depth[n],
                 n_convolution_fused=n_convolutions_fused[n],
                 weight_initializer=weight_initializer,
-                activation_func=activation_func)
+                activation_func=activation_func,
+            )
         else:
             self.conv3_image = net_utils.VGGNetBlock(
                 in_channels=in_channels_image,
@@ -204,7 +216,8 @@ class KBNetEncoder(torch.nn.Module):
                 n_convolution=n_convolutions_image[n],
                 stride=2,
                 weight_initializer=weight_initializer,
-                activation_func=activation_func)
+                activation_func=activation_func,
+            )
 
             self.conv3_depth = net_utils.VGGNetBlock(
                 in_channels=in_channels_depth,
@@ -212,20 +225,20 @@ class KBNetEncoder(torch.nn.Module):
                 n_convolution=n_convolutions_depth[n],
                 stride=2,
                 weight_initializer=weight_initializer,
-                activation_func=activation_func)
+                activation_func=activation_func,
+            )
 
         # Resolution: 1/8 -> 1/16
         n = 3
 
-        in_channels_image = n_filters_image[n-1]
-        in_channels_depth = n_filters_depth[n-1]
+        in_channels_image = n_filters_image[n - 1]
+        in_channels_depth = n_filters_depth[n - 1]
 
         if n in resolutions_backprojection:
-
             if n - 1 in resolutions_backprojection:
-                in_channels_fused = n_filters_image[n-1] + n_filters_fused[n-1]
+                in_channels_fused = n_filters_image[n - 1] + n_filters_fused[n - 1]
             else:
-                in_channels_fused = n_filters_image[n-1]
+                in_channels_fused = n_filters_image[n - 1]
 
             self.calibrated_backprojection4 = net_utils.CalibratedBackprojectionBlock(
                 in_channels_image=in_channels_image,
@@ -238,7 +251,8 @@ class KBNetEncoder(torch.nn.Module):
                 n_convolution_depth=n_convolutions_depth[n],
                 n_convolution_fused=n_convolutions_fused[n],
                 weight_initializer=weight_initializer,
-                activation_func=activation_func)
+                activation_func=activation_func,
+            )
         else:
             self.conv4_image = net_utils.VGGNetBlock(
                 in_channels=in_channels_image,
@@ -246,7 +260,8 @@ class KBNetEncoder(torch.nn.Module):
                 n_convolution=n_convolutions_image[n],
                 stride=2,
                 weight_initializer=weight_initializer,
-                activation_func=activation_func)
+                activation_func=activation_func,
+            )
 
             self.conv4_depth = net_utils.VGGNetBlock(
                 in_channels=in_channels_depth,
@@ -254,20 +269,20 @@ class KBNetEncoder(torch.nn.Module):
                 n_convolution=n_convolutions_depth[n],
                 stride=2,
                 weight_initializer=weight_initializer,
-                activation_func=activation_func)
+                activation_func=activation_func,
+            )
 
         # Resolution: 1/16 -> 1/32
         n = 4
 
-        in_channels_image = n_filters_image[n-1]
-        in_channels_depth = n_filters_depth[n-1]
+        in_channels_image = n_filters_image[n - 1]
+        in_channels_depth = n_filters_depth[n - 1]
 
         if n in resolutions_backprojection:
-
             if n - 1 in resolutions_backprojection:
-                in_channels_fused = n_filters_image[n-1] + n_filters_fused[n-1]
+                in_channels_fused = n_filters_image[n - 1] + n_filters_fused[n - 1]
             else:
-                in_channels_fused = n_filters_image[n-1]
+                in_channels_fused = n_filters_image[n - 1]
 
             self.calibrated_backprojection5 = net_utils.CalibratedBackprojectionBlock(
                 in_channels_image=in_channels_image,
@@ -280,7 +295,8 @@ class KBNetEncoder(torch.nn.Module):
                 n_convolution_depth=n_convolutions_depth[n],
                 n_convolution_fused=n_convolutions_fused[n],
                 weight_initializer=weight_initializer,
-                activation_func=activation_func)
+                activation_func=activation_func,
+            )
         else:
             self.conv5_image = net_utils.VGGNetBlock(
                 in_channels=in_channels_image,
@@ -288,7 +304,8 @@ class KBNetEncoder(torch.nn.Module):
                 n_convolution=n_convolutions_image[n],
                 stride=2,
                 weight_initializer=weight_initializer,
-                activation_func=activation_func)
+                activation_func=activation_func,
+            )
 
             self.conv5_depth = net_utils.VGGNetBlock(
                 in_channels=in_channels_depth,
@@ -296,10 +313,11 @@ class KBNetEncoder(torch.nn.Module):
                 n_convolution=n_convolutions_depth[n],
                 stride=2,
                 weight_initializer=weight_initializer,
-                activation_func=activation_func)
+                activation_func=activation_func,
+            )
 
     def forward(self, image, depth, intrinsics):
-        '''
+        """
         Forward image, depth and calibration through encoder
 
         Arg(s):
@@ -312,7 +330,7 @@ class KBNetEncoder(torch.nn.Module):
         Returns:
             torch.Tensor[float32] : N x K x h x w output tensor
             list[torch.Tensor[float32]] : list of skip connections
-        '''
+        """
 
         def camera_coordinates(batch, height, width, k):
             # Reshape pixel coordinates to N x 3 x (H x W)
@@ -321,7 +339,8 @@ class KBNetEncoder(torch.nn.Module):
                 n_height=height,
                 n_width=width,
                 device=k.device,
-                homogeneous=True)
+                homogeneous=True,
+            )
             xy_h = xy_h.view(batch, 3, -1)
 
             # K^-1 [x, y, 1] z and reshape back to N x 3 x H x W
@@ -343,9 +362,11 @@ class KBNetEncoder(torch.nn.Module):
             scale_y = n_height1 / n_height0
 
             # Prepare 3 x 3 matrix to do element-wise scaling
-            scale = torch.tensor([[scale_x,     1.0, scale_x],
-                                  [1.0,     scale_y, scale_y],
-                                  [1.0,         1.0,      1.0]], dtype=torch.float32, device=device)
+            scale = torch.tensor(
+                [[scale_x, 1.0, scale_x], [1.0, scale_y, scale_y], [1.0, 1.0, 1.0]],
+                dtype=torch.float32,
+                device=device,
+            )
 
             scale = scale.view(1, 3, 3).repeat(n_batch, 1, 1)
 
@@ -369,7 +390,8 @@ class KBNetEncoder(torch.nn.Module):
                 image=conv0_image,
                 depth=conv0_depth,
                 coordinates=coordinates0,
-                fused=None)
+                fused=None,
+            )
 
             skips1 = [conv1_fused, conv1_depth]
         else:
@@ -392,7 +414,8 @@ class KBNetEncoder(torch.nn.Module):
                 width0=n_width0,
                 height1=n_height1,
                 width1=n_width1,
-                k=intrinsics)
+                k=intrinsics,
+            )
 
             # Normalized camera coordinates
             coordinates1 = camera_coordinates(n_batch, n_height1, n_width1, intrinsics1)
@@ -402,7 +425,8 @@ class KBNetEncoder(torch.nn.Module):
                 image=conv1_image,
                 depth=conv1_depth,
                 coordinates=coordinates1,
-                fused=conv1_fused)
+                fused=conv1_fused,
+            )
 
             skips2 = [conv2_fused, conv2_depth]
         else:
@@ -429,7 +453,8 @@ class KBNetEncoder(torch.nn.Module):
                 width0=n_width0,
                 height1=n_height2,
                 width1=n_width2,
-                k=intrinsics)
+                k=intrinsics,
+            )
 
             # Normalized camera coordinates
             coordinates2 = camera_coordinates(n_batch, n_height2, n_width2, intrinsics2)
@@ -439,7 +464,8 @@ class KBNetEncoder(torch.nn.Module):
                 image=conv2_image,
                 depth=conv2_depth,
                 coordinates=coordinates2,
-                fused=conv2_fused)
+                fused=conv2_fused,
+            )
 
             skips3 = [conv3_fused, conv3_depth]
         else:
@@ -466,7 +492,8 @@ class KBNetEncoder(torch.nn.Module):
                 width0=n_width0,
                 height1=n_height3,
                 width1=n_width3,
-                k=intrinsics)
+                k=intrinsics,
+            )
 
             # Normalized camera coordinates
             coordinates3 = camera_coordinates(n_batch, n_height3, n_width3, intrinsics3)
@@ -476,7 +503,8 @@ class KBNetEncoder(torch.nn.Module):
                 image=conv3_image,
                 depth=conv3_depth,
                 coordinates=coordinates3,
-                fused=conv3_fused)
+                fused=conv3_fused,
+            )
 
             skips4 = [conv4_fused, conv4_depth]
         else:
@@ -503,7 +531,8 @@ class KBNetEncoder(torch.nn.Module):
                 width0=n_width0,
                 height1=n_height4,
                 width1=n_width4,
-                k=intrinsics)
+                k=intrinsics,
+            )
 
             # Normalized camera coordinates
             coordinates4 = camera_coordinates(n_batch, n_height4, n_width4, intrinsics4)
@@ -513,7 +542,8 @@ class KBNetEncoder(torch.nn.Module):
                 image=conv4_image,
                 depth=conv4_depth,
                 coordinates=coordinates4,
-                fused=conv4_fused)
+                fused=conv4_fused,
+            )
 
             skips5 = [conv5_fused, conv5_depth]
         else:
@@ -534,7 +564,7 @@ class KBNetEncoder(torch.nn.Module):
 
 
 class PoseEncoder(torch.nn.Module):
-    '''
+    """
     Pose network encoder
 
     Arg(s):
@@ -550,15 +580,17 @@ class PoseEncoder(torch.nn.Module):
             if set, then apply batch normalization
         use_instance_norm : bool
             if set, then apply instance normalization
-    '''
+    """
 
-    def __init__(self,
-                 input_channels=6,
-                 n_filters=[16, 32, 64, 128, 256, 256, 256],
-                 weight_initializer='kaiming_uniform',
-                 activation_func='leaky_relu',
-                 use_batch_norm=False,
-                 use_instance_norm=False):
+    def __init__(
+        self,
+        input_channels=6,
+        n_filters=[16, 32, 64, 128, 256, 256, 256],
+        weight_initializer="kaiming_uniform",
+        activation_func="leaky_relu",
+        use_batch_norm=False,
+        use_instance_norm=False,
+    ):
         super(PoseEncoder, self).__init__()
 
         activation_func = net_utils.activation_func(activation_func)
@@ -571,7 +603,8 @@ class PoseEncoder(torch.nn.Module):
             weight_initializer=weight_initializer,
             activation_func=activation_func,
             use_batch_norm=use_batch_norm,
-            use_instance_norm=use_instance_norm)
+            use_instance_norm=use_instance_norm,
+        )
 
         self.conv2 = net_utils.Conv2d(
             n_filters[0],
@@ -581,7 +614,8 @@ class PoseEncoder(torch.nn.Module):
             weight_initializer=weight_initializer,
             activation_func=activation_func,
             use_batch_norm=use_batch_norm,
-            use_instance_norm=use_instance_norm)
+            use_instance_norm=use_instance_norm,
+        )
 
         self.conv3 = net_utils.Conv2d(
             n_filters[1],
@@ -591,7 +625,8 @@ class PoseEncoder(torch.nn.Module):
             weight_initializer=weight_initializer,
             activation_func=activation_func,
             use_batch_norm=use_batch_norm,
-            use_instance_norm=use_instance_norm)
+            use_instance_norm=use_instance_norm,
+        )
 
         self.conv4 = net_utils.Conv2d(
             n_filters[2],
@@ -601,7 +636,8 @@ class PoseEncoder(torch.nn.Module):
             weight_initializer=weight_initializer,
             activation_func=activation_func,
             use_batch_norm=use_batch_norm,
-            use_instance_norm=use_instance_norm)
+            use_instance_norm=use_instance_norm,
+        )
 
         self.conv5 = net_utils.Conv2d(
             n_filters[3],
@@ -611,7 +647,8 @@ class PoseEncoder(torch.nn.Module):
             weight_initializer=weight_initializer,
             activation_func=activation_func,
             use_batch_norm=use_batch_norm,
-            use_instance_norm=use_instance_norm)
+            use_instance_norm=use_instance_norm,
+        )
 
         self.conv6 = net_utils.Conv2d(
             n_filters[4],
@@ -621,7 +658,8 @@ class PoseEncoder(torch.nn.Module):
             weight_initializer=weight_initializer,
             activation_func=activation_func,
             use_batch_norm=use_batch_norm,
-            use_instance_norm=use_instance_norm)
+            use_instance_norm=use_instance_norm,
+        )
 
         self.conv7 = net_utils.Conv2d(
             n_filters[5],
@@ -631,10 +669,11 @@ class PoseEncoder(torch.nn.Module):
             weight_initializer=weight_initializer,
             activation_func=activation_func,
             use_batch_norm=use_batch_norm,
-            use_instance_norm=use_instance_norm)
+            use_instance_norm=use_instance_norm,
+        )
 
     def forward(self, x):
-        '''
+        """
         Forward input x through encoder
 
         Arg(s):
@@ -643,7 +682,7 @@ class PoseEncoder(torch.nn.Module):
         Returns:
             torch.Tensor[float32] : N x K x h x w output tensor
             None
-        '''
+        """
 
         layers = [x]
 
@@ -672,7 +711,7 @@ class PoseEncoder(torch.nn.Module):
 
 
 class ResNetEncoder(torch.nn.Module):
-    '''
+    """
     ResNet encoder with skip connections
 
     Arg(s):
@@ -692,17 +731,19 @@ class ResNetEncoder(torch.nn.Module):
             if set, then apply instance normalization
         use_depthwise_separable : bool
             if set, then use depthwise separable convolutions instead of convolutions
-    '''
+    """
 
-    def __init__(self,
-                 n_layer,
-                 input_channels=3,
-                 n_filters=[32, 64, 128, 256, 256],
-                 weight_initializer='kaiming_uniform',
-                 activation_func='leaky_relu',
-                 use_batch_norm=False,
-                 use_instance_norm=False,
-                 use_depthwise_separable=False):
+    def __init__(
+        self,
+        n_layer,
+        input_channels=3,
+        n_filters=[32, 64, 128, 256, 256],
+        weight_initializer="kaiming_uniform",
+        activation_func="leaky_relu",
+        use_batch_norm=False,
+        use_instance_norm=False,
+        use_depthwise_separable=False,
+    ):
         super(ResNetEncoder, self).__init__()
 
         use_bottleneck = False
@@ -717,7 +758,7 @@ class ResNetEncoder(torch.nn.Module):
             use_bottleneck = True
             resnet_block = net_utils.ResNetBottleneckBlock
         else:
-            raise ValueError('Only supports 18, 34, 50 layer architecture')
+            raise ValueError("Only supports 18, 34, 50 layer architecture")
 
         for n in range(len(n_filters) - len(n_blocks) - 1):
             n_blocks = n_blocks + [n_blocks[-1]]
@@ -741,7 +782,8 @@ class ResNetEncoder(torch.nn.Module):
             weight_initializer=weight_initializer,
             activation_func=activation_func,
             use_batch_norm=use_batch_norm,
-            use_instance_norm=use_instance_norm)
+            use_instance_norm=use_instance_norm,
+        )
 
         # Resolution 1/2 -> 1/4
         self.max_pool = torch.nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
@@ -749,7 +791,7 @@ class ResNetEncoder(torch.nn.Module):
         filter_idx = filter_idx + 1
 
         blocks2 = []
-        in_channels, out_channels = [n_filters[filter_idx-1], n_filters[filter_idx]]
+        in_channels, out_channels = [n_filters[filter_idx - 1], n_filters[filter_idx]]
         for n in range(n_blocks[block_idx]):
             if n == 0:
                 block = resnet_block(
@@ -760,7 +802,8 @@ class ResNetEncoder(torch.nn.Module):
                     activation_func=activation_func,
                     use_batch_norm=use_batch_norm,
                     use_instance_norm=use_instance_norm,
-                    use_depthwise_separable=False)
+                    use_depthwise_separable=False,
+                )
             else:
                 in_channels = 4 * out_channels if use_bottleneck else out_channels
                 block = resnet_block(
@@ -771,7 +814,8 @@ class ResNetEncoder(torch.nn.Module):
                     activation_func=activation_func,
                     use_batch_norm=use_batch_norm,
                     use_instance_norm=use_instance_norm,
-                    use_depthwise_separable=False)
+                    use_depthwise_separable=False,
+                )
 
             blocks2.append(block)
 
@@ -782,7 +826,7 @@ class ResNetEncoder(torch.nn.Module):
         filter_idx = filter_idx + 1
 
         blocks3 = []
-        in_channels, out_channels = [n_filters[filter_idx-1], n_filters[filter_idx]]
+        in_channels, out_channels = [n_filters[filter_idx - 1], n_filters[filter_idx]]
         for n in range(n_blocks[block_idx]):
             if n == 0:
                 in_channels = 4 * in_channels if use_bottleneck else in_channels
@@ -794,7 +838,8 @@ class ResNetEncoder(torch.nn.Module):
                     activation_func=activation_func,
                     use_batch_norm=use_batch_norm,
                     use_instance_norm=use_instance_norm,
-                    use_depthwise_separable=False)
+                    use_depthwise_separable=False,
+                )
             else:
                 in_channels = 4 * out_channels if use_bottleneck else out_channels
                 block = resnet_block(
@@ -805,7 +850,8 @@ class ResNetEncoder(torch.nn.Module):
                     activation_func=activation_func,
                     use_batch_norm=use_batch_norm,
                     use_instance_norm=use_instance_norm,
-                    use_depthwise_separable=False)
+                    use_depthwise_separable=False,
+                )
 
             blocks3.append(block)
 
@@ -816,7 +862,7 @@ class ResNetEncoder(torch.nn.Module):
         filter_idx = filter_idx + 1
 
         blocks4 = []
-        in_channels, out_channels = [n_filters[filter_idx-1], n_filters[filter_idx]]
+        in_channels, out_channels = [n_filters[filter_idx - 1], n_filters[filter_idx]]
         for n in range(n_blocks[block_idx]):
             if n == 0:
                 in_channels = 4 * in_channels if use_bottleneck else in_channels
@@ -828,7 +874,8 @@ class ResNetEncoder(torch.nn.Module):
                     activation_func=activation_func,
                     use_batch_norm=use_batch_norm,
                     use_instance_norm=use_instance_norm,
-                    use_depthwise_separable=use_depthwise_separable)
+                    use_depthwise_separable=use_depthwise_separable,
+                )
             else:
                 in_channels = 4 * out_channels if use_bottleneck else out_channels
                 block = resnet_block(
@@ -839,7 +886,8 @@ class ResNetEncoder(torch.nn.Module):
                     activation_func=activation_func,
                     use_batch_norm=use_batch_norm,
                     use_instance_norm=use_instance_norm,
-                    use_depthwise_separable=use_depthwise_separable)
+                    use_depthwise_separable=use_depthwise_separable,
+                )
 
             blocks4.append(block)
 
@@ -850,7 +898,7 @@ class ResNetEncoder(torch.nn.Module):
         filter_idx = filter_idx + 1
 
         blocks5 = []
-        in_channels, out_channels = [n_filters[filter_idx-1], n_filters[filter_idx]]
+        in_channels, out_channels = [n_filters[filter_idx - 1], n_filters[filter_idx]]
         for n in range(n_blocks[block_idx]):
             if n == 0:
                 in_channels = 4 * in_channels if use_bottleneck else in_channels
@@ -862,7 +910,8 @@ class ResNetEncoder(torch.nn.Module):
                     activation_func=activation_func,
                     use_batch_norm=use_batch_norm,
                     use_instance_norm=use_instance_norm,
-                    use_depthwise_separable=use_depthwise_separable)
+                    use_depthwise_separable=use_depthwise_separable,
+                )
             else:
                 in_channels = 4 * out_channels if use_bottleneck else out_channels
                 block = resnet_block(
@@ -873,7 +922,8 @@ class ResNetEncoder(torch.nn.Module):
                     activation_func=activation_func,
                     use_batch_norm=use_batch_norm,
                     use_instance_norm=use_instance_norm,
-                    use_depthwise_separable=use_depthwise_separable)
+                    use_depthwise_separable=use_depthwise_separable,
+                )
 
             blocks5.append(block)
 
@@ -884,9 +934,11 @@ class ResNetEncoder(torch.nn.Module):
         filter_idx = filter_idx + 1
 
         if filter_idx < len(n_filters):
-
             blocks6 = []
-            in_channels, out_channels = [n_filters[filter_idx-1], n_filters[filter_idx]]
+            in_channels, out_channels = [
+                n_filters[filter_idx - 1],
+                n_filters[filter_idx],
+            ]
             for n in range(n_blocks[block_idx]):
                 if n == 0:
                     in_channels = 4 * in_channels if use_bottleneck else in_channels
@@ -898,7 +950,8 @@ class ResNetEncoder(torch.nn.Module):
                         activation_func=activation_func,
                         use_batch_norm=use_batch_norm,
                         use_instance_norm=use_instance_norm,
-                        use_depthwise_separable=use_depthwise_separable)
+                        use_depthwise_separable=use_depthwise_separable,
+                    )
                 else:
                     in_channels = 4 * out_channels if use_bottleneck else out_channels
                     block = resnet_block(
@@ -909,7 +962,8 @@ class ResNetEncoder(torch.nn.Module):
                         activation_func=activation_func,
                         use_batch_norm=use_batch_norm,
                         use_instance_norm=use_instance_norm,
-                        use_depthwise_separable=use_depthwise_separable)
+                        use_depthwise_separable=use_depthwise_separable,
+                    )
 
                 blocks6.append(block)
 
@@ -922,9 +976,11 @@ class ResNetEncoder(torch.nn.Module):
         filter_idx = filter_idx + 1
 
         if filter_idx < len(n_filters):
-
             blocks7 = []
-            in_channels, out_channels = [n_filters[filter_idx-1], n_filters[filter_idx]]
+            in_channels, out_channels = [
+                n_filters[filter_idx - 1],
+                n_filters[filter_idx],
+            ]
             for n in range(n_blocks[block_idx]):
                 if n == 0:
                     in_channels = 4 * in_channels if use_bottleneck else in_channels
@@ -936,7 +992,8 @@ class ResNetEncoder(torch.nn.Module):
                         activation_func=activation_func,
                         use_batch_norm=use_batch_norm,
                         use_instance_norm=use_instance_norm,
-                        use_depthwise_separable=use_depthwise_separable)
+                        use_depthwise_separable=use_depthwise_separable,
+                    )
                 else:
                     in_channels = 4 * out_channels if use_bottleneck else out_channels
                     block = resnet_block(
@@ -947,7 +1004,8 @@ class ResNetEncoder(torch.nn.Module):
                         activation_func=activation_func,
                         use_batch_norm=use_batch_norm,
                         use_instance_norm=use_instance_norm,
-                        use_depthwise_separable=use_depthwise_separable)
+                        use_depthwise_separable=use_depthwise_separable,
+                    )
 
                 blocks7.append(block)
 
@@ -956,7 +1014,7 @@ class ResNetEncoder(torch.nn.Module):
             self.blocks7 = None
 
     def forward(self, x):
-        '''
+        """
         Forward input x through a ResNet encoder
 
         Arg(s):
@@ -965,7 +1023,7 @@ class ResNetEncoder(torch.nn.Module):
         Returns:
             torch.Tensor[float32] : N x K x h x w output tensor
             list[torch.Tensor[float32]] : list of skip connections
-        '''
+        """
 
         layers = [x]
 
@@ -997,7 +1055,7 @@ class ResNetEncoder(torch.nn.Module):
 
 
 class AtrousResNetEncoder(torch.nn.Module):
-    '''
+    """
     ResNet encoder with skip connections
 
     Arg(s):
@@ -1017,17 +1075,19 @@ class AtrousResNetEncoder(torch.nn.Module):
             if set, then apply batch normalization
         use_instance_norm : bool
             if set, then apply instance normalization
-    '''
+    """
 
-    def __init__(self,
-                 n_layer,
-                 input_channels=3,
-                 n_filters=[32, 64, 128, 256, 256],
-                 atrous_spatial_pyramid_pool_dilations=None,
-                 weight_initializer='kaiming_uniform',
-                 activation_func='leaky_relu',
-                 use_batch_norm=False,
-                 use_instance_norm=False):
+    def __init__(
+        self,
+        n_layer,
+        input_channels=3,
+        n_filters=[32, 64, 128, 256, 256],
+        atrous_spatial_pyramid_pool_dilations=None,
+        weight_initializer="kaiming_uniform",
+        activation_func="leaky_relu",
+        use_batch_norm=False,
+        use_instance_norm=False,
+    ):
         super(AtrousResNetEncoder, self).__init__()
 
         if n_layer == 18:
@@ -1039,7 +1099,7 @@ class AtrousResNetEncoder(torch.nn.Module):
             resnet_block = net_utils.ResNetBlock
             atrous_resnet_block = net_utils.AtrousResNetBlock
         else:
-            raise ValueError('Only supports 18, 34 layer architecture')
+            raise ValueError("Only supports 18, 34 layer architecture")
 
         assert len(n_filters) == len(n_blocks) + 1
 
@@ -1056,7 +1116,8 @@ class AtrousResNetEncoder(torch.nn.Module):
             weight_initializer=weight_initializer,
             activation_func=activation_func,
             use_batch_norm=use_batch_norm,
-            use_instance_norm=use_instance_norm)
+            use_instance_norm=use_instance_norm,
+        )
 
         # Resolution 1/2 -> 1/4
         self.max_pool = torch.nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
@@ -1072,7 +1133,8 @@ class AtrousResNetEncoder(torch.nn.Module):
                     weight_initializer=weight_initializer,
                     activation_func=activation_func,
                     use_batch_norm=use_batch_norm,
-                    use_instance_norm=use_instance_norm)
+                    use_instance_norm=use_instance_norm,
+                )
                 blocks2.append(block)
             else:
                 in_channels = out_channels
@@ -1083,7 +1145,8 @@ class AtrousResNetEncoder(torch.nn.Module):
                     weight_initializer=weight_initializer,
                     activation_func=activation_func,
                     use_batch_norm=use_batch_norm,
-                    use_instance_norm=use_instance_norm)
+                    use_instance_norm=use_instance_norm,
+                )
                 blocks2.append(block)
         self.blocks2 = torch.nn.Sequential(*blocks2)
 
@@ -1099,7 +1162,8 @@ class AtrousResNetEncoder(torch.nn.Module):
                     weight_initializer=weight_initializer,
                     activation_func=activation_func,
                     use_batch_norm=use_batch_norm,
-                    use_instance_norm=use_instance_norm)
+                    use_instance_norm=use_instance_norm,
+                )
                 blocks3.append(block)
             else:
                 in_channels = out_channels
@@ -1110,7 +1174,8 @@ class AtrousResNetEncoder(torch.nn.Module):
                     weight_initializer=weight_initializer,
                     activation_func=activation_func,
                     use_batch_norm=use_batch_norm,
-                    use_instance_norm=use_instance_norm)
+                    use_instance_norm=use_instance_norm,
+                )
                 blocks3.append(block)
         self.blocks3 = torch.nn.Sequential(*blocks3)
 
@@ -1126,7 +1191,8 @@ class AtrousResNetEncoder(torch.nn.Module):
                     weight_initializer=weight_initializer,
                     activation_func=activation_func,
                     use_batch_norm=use_batch_norm,
-                    use_instance_norm=use_instance_norm)
+                    use_instance_norm=use_instance_norm,
+                )
                 dilation = dilation * 2
                 blocks4.append(block)
             else:
@@ -1138,7 +1204,8 @@ class AtrousResNetEncoder(torch.nn.Module):
                     weight_initializer=weight_initializer,
                     activation_func=activation_func,
                     use_batch_norm=use_batch_norm,
-                    use_instance_norm=use_instance_norm)
+                    use_instance_norm=use_instance_norm,
+                )
                 blocks4.append(block)
         self.blocks4 = torch.nn.Sequential(*blocks4)
 
@@ -1154,7 +1221,8 @@ class AtrousResNetEncoder(torch.nn.Module):
                     weight_initializer=weight_initializer,
                     activation_func=activation_func,
                     use_batch_norm=use_batch_norm,
-                    use_instance_norm=use_instance_norm)
+                    use_instance_norm=use_instance_norm,
+                )
                 dilation = dilation * 2
                 blocks5.append(block)
             else:
@@ -1166,7 +1234,8 @@ class AtrousResNetEncoder(torch.nn.Module):
                     weight_initializer=weight_initializer,
                     activation_func=activation_func,
                     use_batch_norm=use_batch_norm,
-                    use_instance_norm=use_instance_norm)
+                    use_instance_norm=use_instance_norm,
+                )
                 blocks5.append(block)
         self.blocks5 = torch.nn.Sequential(*blocks5)
 
@@ -1178,12 +1247,13 @@ class AtrousResNetEncoder(torch.nn.Module):
                 weight_initializer=weight_initializer,
                 activation_func=activation_func,
                 use_batch_norm=use_batch_norm,
-                use_instance_norm=use_instance_norm)
+                use_instance_norm=use_instance_norm,
+            )
         else:
             self.atrous_spatial_pyramid_pool = torch.nn.Identity()
 
     def forward(self, x):
-        '''
+        """
         Forward input x through an atrous ResNet encoder
 
         Arg(s):
@@ -1192,7 +1262,7 @@ class AtrousResNetEncoder(torch.nn.Module):
         Returns:
             torch.Tensor[float32] : N x K x h x w output tensor
             list[torch.Tensor[float32]] : list of skip connections
-        '''
+        """
 
         layers = [x]
 
@@ -1218,7 +1288,7 @@ class AtrousResNetEncoder(torch.nn.Module):
 
 
 class VGGNetEncoder(torch.nn.Module):
-    '''
+    """
     VGGNet encoder with skip connections
 
     Arg(s):
@@ -1238,17 +1308,19 @@ class VGGNetEncoder(torch.nn.Module):
             if set, then apply instance normalization
         use_depthwise_separable : bool
             if set, then use depthwise separable convolutions instead of convolutions
-    '''
+    """
 
-    def __init__(self,
-                 n_layer,
-                 input_channels=3,
-                 n_filters=[32, 64, 128, 256, 256],
-                 weight_initializer='kaiming_uniform',
-                 activation_func='leaky_relu',
-                 use_batch_norm=False,
-                 use_instance_norm=False,
-                 use_depthwise_separable=False):
+    def __init__(
+        self,
+        n_layer,
+        input_channels=3,
+        n_filters=[32, 64, 128, 256, 256],
+        weight_initializer="kaiming_uniform",
+        activation_func="leaky_relu",
+        use_batch_norm=False,
+        use_instance_norm=False,
+        use_depthwise_separable=False,
+    ):
         super(VGGNetEncoder, self).__init__()
 
         if n_layer == 8:
@@ -1258,7 +1330,7 @@ class VGGNetEncoder(torch.nn.Module):
         elif n_layer == 13:
             n_convolutions = [2, 2, 2, 2, 2]
         else:
-            raise ValueError('Only supports 8, 11, 13 layer architecture')
+            raise ValueError("Only supports 8, 11, 13 layer architecture")
 
         for n in range(len(n_filters) - len(n_convolutions) - 1):
             n_convolutions = n_convolutions + [n_convolutions[-1]]
@@ -1283,7 +1355,8 @@ class VGGNetEncoder(torch.nn.Module):
             weight_initializer=weight_initializer,
             activation_func=activation_func,
             use_batch_norm=use_batch_norm,
-            use_instance_norm=use_instance_norm)
+            use_instance_norm=use_instance_norm,
+        )
 
         if n_convolutions[block_idx] - 1 > 0:
             self.conv1 = torch.nn.Sequential(
@@ -1297,14 +1370,16 @@ class VGGNetEncoder(torch.nn.Module):
                     activation_func=activation_func,
                     use_batch_norm=use_batch_norm,
                     use_instance_norm=use_instance_norm,
-                    use_depthwise_separable=False))
+                    use_depthwise_separable=False,
+                ),
+            )
         else:
             self.conv1 = conv1
 
         # Resolution 1/2 -> 1/4
         block_idx = block_idx + 1
         filter_idx = filter_idx + 1
-        in_channels, out_channels = [n_filters[filter_idx-1], n_filters[filter_idx]]
+        in_channels, out_channels = [n_filters[filter_idx - 1], n_filters[filter_idx]]
 
         self.conv2 = net_utils.VGGNetBlock(
             in_channels,
@@ -1315,12 +1390,13 @@ class VGGNetEncoder(torch.nn.Module):
             activation_func=activation_func,
             use_batch_norm=use_batch_norm,
             use_instance_norm=use_instance_norm,
-            use_depthwise_separable=False)
+            use_depthwise_separable=False,
+        )
 
         # Resolution 1/4 -> 1/8
         block_idx = block_idx + 1
         filter_idx = filter_idx + 1
-        in_channels, out_channels = [n_filters[filter_idx-1], n_filters[filter_idx]]
+        in_channels, out_channels = [n_filters[filter_idx - 1], n_filters[filter_idx]]
 
         self.conv3 = net_utils.VGGNetBlock(
             in_channels,
@@ -1331,12 +1407,13 @@ class VGGNetEncoder(torch.nn.Module):
             activation_func=activation_func,
             use_batch_norm=use_batch_norm,
             use_instance_norm=use_instance_norm,
-            use_depthwise_separable=False)
+            use_depthwise_separable=False,
+        )
 
         # Resolution 1/8 -> 1/16
         block_idx = block_idx + 1
         filter_idx = filter_idx + 1
-        in_channels, out_channels = [n_filters[filter_idx-1], n_filters[filter_idx]]
+        in_channels, out_channels = [n_filters[filter_idx - 1], n_filters[filter_idx]]
 
         self.conv4 = net_utils.VGGNetBlock(
             in_channels,
@@ -1347,12 +1424,13 @@ class VGGNetEncoder(torch.nn.Module):
             activation_func=activation_func,
             use_batch_norm=use_batch_norm,
             use_instance_norm=use_instance_norm,
-            use_depthwise_separable=use_depthwise_separable)
+            use_depthwise_separable=use_depthwise_separable,
+        )
 
         # Resolution 1/16 -> 1/32
         block_idx = block_idx + 1
         filter_idx = filter_idx + 1
-        in_channels, out_channels = [n_filters[filter_idx-1], n_filters[filter_idx]]
+        in_channels, out_channels = [n_filters[filter_idx - 1], n_filters[filter_idx]]
 
         self.conv5 = net_utils.VGGNetBlock(
             in_channels,
@@ -1363,15 +1441,18 @@ class VGGNetEncoder(torch.nn.Module):
             activation_func=activation_func,
             use_batch_norm=use_batch_norm,
             use_instance_norm=use_instance_norm,
-            use_depthwise_separable=use_depthwise_separable)
+            use_depthwise_separable=use_depthwise_separable,
+        )
 
         # Resolution 1/32 -> 1/64
         block_idx = block_idx + 1
         filter_idx = filter_idx + 1
 
         if filter_idx < len(n_filters):
-
-            in_channels, out_channels = [n_filters[filter_idx-1], n_filters[filter_idx]]
+            in_channels, out_channels = [
+                n_filters[filter_idx - 1],
+                n_filters[filter_idx],
+            ]
 
             self.conv6 = net_utils.VGGNetBlock(
                 in_channels,
@@ -1382,7 +1463,8 @@ class VGGNetEncoder(torch.nn.Module):
                 activation_func=activation_func,
                 use_batch_norm=use_batch_norm,
                 use_instance_norm=use_instance_norm,
-                use_depthwise_separable=use_depthwise_separable)
+                use_depthwise_separable=use_depthwise_separable,
+            )
         else:
             self.conv6 = None
 
@@ -1391,8 +1473,10 @@ class VGGNetEncoder(torch.nn.Module):
         filter_idx = filter_idx + 1
 
         if filter_idx < len(n_filters):
-
-            in_channels, out_channels = [n_filters[filter_idx-1], n_filters[filter_idx]]
+            in_channels, out_channels = [
+                n_filters[filter_idx - 1],
+                n_filters[filter_idx],
+            ]
 
             self.conv7 = net_utils.VGGNetBlock(
                 in_channels,
@@ -1403,12 +1487,13 @@ class VGGNetEncoder(torch.nn.Module):
                 activation_func=activation_func,
                 use_batch_norm=use_batch_norm,
                 use_instance_norm=use_instance_norm,
-                use_depthwise_separable=use_depthwise_separable)
+                use_depthwise_separable=use_depthwise_separable,
+            )
         else:
             self.conv7 = None
 
     def forward(self, x):
-        '''
+        """
         Forward input x through a VGGNet encoder
 
         Arg(s):
@@ -1416,7 +1501,7 @@ class VGGNetEncoder(torch.nn.Module):
                 N x C x H x W input tensor
         Returns:
             torch.Tensor[float32] : N x K x h x w output tensor
-        '''
+        """
 
         layers = [x]
 
@@ -1447,7 +1532,7 @@ class VGGNetEncoder(torch.nn.Module):
 
 
 class AtrousVGGNetEncoder(torch.nn.Module):
-    '''
+    """
     Atrous VGGNet encoder with skip connections
 
     Arg(s):
@@ -1465,16 +1550,18 @@ class AtrousVGGNetEncoder(torch.nn.Module):
             if set, then apply batch normalization
         use_instance_norm : bool
             if set, then apply instance normalization
-    '''
+    """
 
-    def __init__(self,
-                 n_layer,
-                 input_channels=3,
-                 n_filters=[32, 64, 128, 256, 256],
-                 weight_initializer='kaiming_uniform',
-                 activation_func='leaky_relu',
-                 use_batch_norm=False,
-                 use_instance_norm=False):
+    def __init__(
+        self,
+        n_layer,
+        input_channels=3,
+        n_filters=[32, 64, 128, 256, 256],
+        weight_initializer="kaiming_uniform",
+        activation_func="leaky_relu",
+        use_batch_norm=False,
+        use_instance_norm=False,
+    ):
         super(AtrousVGGNetEncoder, self).__init__()
 
         if n_layer == 8:
@@ -1484,7 +1571,7 @@ class AtrousVGGNetEncoder(torch.nn.Module):
         elif n_layer == 13:
             n_convolutions = [2, 2, 2, 2, 2]
         else:
-            raise ValueError('Only supports 8, 11, 13 layer architecture')
+            raise ValueError("Only supports 8, 11, 13 layer architecture")
 
         assert len(n_filters) == len(n_convolutions)
 
@@ -1503,7 +1590,8 @@ class AtrousVGGNetEncoder(torch.nn.Module):
             weight_initializer=weight_initializer,
             activation_func=activation_func,
             use_batch_norm=use_batch_norm,
-            use_instance_norm=use_instance_norm)
+            use_instance_norm=use_instance_norm,
+        )
 
         if n_convolutions[0] - 1 > 0:
             self.conv1 = torch.nn.Sequential(
@@ -1516,7 +1604,9 @@ class AtrousVGGNetEncoder(torch.nn.Module):
                     weight_initializer=weight_initializer,
                     activation_func=activation_func,
                     use_batch_norm=use_batch_norm,
-                    use_instance_norm=use_instance_norm))
+                    use_instance_norm=use_instance_norm,
+                ),
+            )
         else:
             self.conv1 = conv1
 
@@ -1530,7 +1620,8 @@ class AtrousVGGNetEncoder(torch.nn.Module):
             weight_initializer=weight_initializer,
             activation_func=activation_func,
             use_batch_norm=use_batch_norm,
-            use_instance_norm=use_instance_norm)
+            use_instance_norm=use_instance_norm,
+        )
 
         # Resolution 1/4 -> 1/8
         in_channels, out_channels = [n_filters[1], n_filters[2]]
@@ -1542,7 +1633,8 @@ class AtrousVGGNetEncoder(torch.nn.Module):
             weight_initializer=weight_initializer,
             activation_func=activation_func,
             use_batch_norm=use_batch_norm,
-            use_instance_norm=use_instance_norm)
+            use_instance_norm=use_instance_norm,
+        )
 
         # Resolution 1/8 with 2x dilation
         in_channels, out_channels = [n_filters[2], n_filters[3]]
@@ -1554,7 +1646,8 @@ class AtrousVGGNetEncoder(torch.nn.Module):
             weight_initializer=weight_initializer,
             activation_func=activation_func,
             use_batch_norm=use_batch_norm,
-            use_instance_norm=use_instance_norm)
+            use_instance_norm=use_instance_norm,
+        )
 
         # Resolution 1/8 with 4x dilation
         in_channels, out_channels = [n_filters[3], n_filters[4]]
@@ -1566,10 +1659,11 @@ class AtrousVGGNetEncoder(torch.nn.Module):
             weight_initializer=weight_initializer,
             activation_func=activation_func,
             use_batch_norm=use_batch_norm,
-            use_instance_norm=use_instance_norm)
+            use_instance_norm=use_instance_norm,
+        )
 
     def forward(self, x):
-        '''
+        """
         Forward input x through an atrous VGGNet encoder
 
         Arg(s):
@@ -1577,7 +1671,7 @@ class AtrousVGGNetEncoder(torch.nn.Module):
                 N x C x H x W input tensor
         Returns:
             torch.Tensor[float32] : N x K x h x w output tensor
-        '''
+        """
 
         layers = [x]
 
@@ -1599,11 +1693,13 @@ class AtrousVGGNetEncoder(torch.nn.Module):
         return layers[-1], layers[1:-1]
 
 
-'''
+"""
 Decoder architectures
-'''
+"""
+
+
 class MultiScaleDecoder(torch.nn.Module):
-    '''
+    """
     Multi-scale decoder with skip connections
 
     Arg(s):
@@ -1629,25 +1725,27 @@ class MultiScaleDecoder(torch.nn.Module):
             if set, then apply instance normalization
         deconv_type : str
             deconvolution types available: transpose, up
-    '''
+    """
 
-    def __init__(self,
-                 input_channels=256,
-                 output_channels=1,
-                 n_resolution=4,
-                 n_filters=[256, 128, 64, 32, 16],
-                 n_skips=[256, 128, 64, 32, 0],
-                 weight_initializer='kaiming_uniform',
-                 activation_func='leaky_relu',
-                 output_func='linear',
-                 use_batch_norm=False,
-                 use_instance_norm=False,
-                 deconv_type='transpose'):
+    def __init__(
+        self,
+        input_channels=256,
+        output_channels=1,
+        n_resolution=4,
+        n_filters=[256, 128, 64, 32, 16],
+        n_skips=[256, 128, 64, 32, 0],
+        weight_initializer="kaiming_uniform",
+        activation_func="leaky_relu",
+        output_func="linear",
+        use_batch_norm=False,
+        use_instance_norm=False,
+        deconv_type="transpose",
+    ):
         super(MultiScaleDecoder, self).__init__()
 
         network_depth = len(n_filters)
 
-        assert network_depth < 8, 'Does not support network depth of 8 or more'
+        assert network_depth < 8, "Does not support network depth of 8 or more"
         assert n_resolution > 0 and n_resolution < network_depth
 
         self.n_resolution = n_resolution
@@ -1657,13 +1755,15 @@ class MultiScaleDecoder(torch.nn.Module):
         output_func = net_utils.activation_func(output_func)
 
         # Upsampling from lower to full resolution requires multi-scale
-        if 'upsample' in self.output_func and self.n_resolution < 2:
+        if "upsample" in self.output_func and self.n_resolution < 2:
             self.n_resolution = 2
 
         filter_idx = 0
 
         in_channels, skip_channels, out_channels = [
-            input_channels, n_skips[filter_idx], n_filters[filter_idx]
+            input_channels,
+            n_skips[filter_idx],
+            n_filters[filter_idx],
         ]
 
         # Resolution 1/128 -> 1/64
@@ -1676,12 +1776,15 @@ class MultiScaleDecoder(torch.nn.Module):
                 activation_func=activation_func,
                 use_batch_norm=use_batch_norm,
                 use_instance_norm=use_instance_norm,
-                deconv_type=deconv_type)
+                deconv_type=deconv_type,
+            )
 
             filter_idx = filter_idx + 1
 
             in_channels, skip_channels, out_channels = [
-                n_filters[filter_idx-1], n_skips[filter_idx], n_filters[filter_idx]
+                n_filters[filter_idx - 1],
+                n_skips[filter_idx],
+                n_filters[filter_idx],
             ]
         else:
             self.deconv6 = None
@@ -1696,12 +1799,15 @@ class MultiScaleDecoder(torch.nn.Module):
                 activation_func=activation_func,
                 use_batch_norm=use_batch_norm,
                 use_instance_norm=use_instance_norm,
-                deconv_type=deconv_type)
+                deconv_type=deconv_type,
+            )
 
             filter_idx = filter_idx + 1
 
             in_channels, skip_channels, out_channels = [
-                n_filters[filter_idx-1], n_skips[filter_idx], n_filters[filter_idx]
+                n_filters[filter_idx - 1],
+                n_skips[filter_idx],
+                n_filters[filter_idx],
             ]
         else:
             self.deconv5 = None
@@ -1716,12 +1822,15 @@ class MultiScaleDecoder(torch.nn.Module):
                 activation_func=activation_func,
                 use_batch_norm=use_batch_norm,
                 use_instance_norm=use_instance_norm,
-                deconv_type=deconv_type)
+                deconv_type=deconv_type,
+            )
 
             filter_idx = filter_idx + 1
 
             in_channels, skip_channels, out_channels = [
-                n_filters[filter_idx-1], n_skips[filter_idx], n_filters[filter_idx]
+                n_filters[filter_idx - 1],
+                n_skips[filter_idx],
+                n_filters[filter_idx],
             ]
         else:
             self.deconv4 = None
@@ -1736,7 +1845,8 @@ class MultiScaleDecoder(torch.nn.Module):
                 activation_func=activation_func,
                 use_batch_norm=use_batch_norm,
                 use_instance_norm=use_instance_norm,
-                deconv_type=deconv_type)
+                deconv_type=deconv_type,
+            )
 
             if self.n_resolution > 3:
                 self.output3 = net_utils.Conv2d(
@@ -1747,7 +1857,8 @@ class MultiScaleDecoder(torch.nn.Module):
                     weight_initializer=weight_initializer,
                     activation_func=None,
                     use_batch_norm=False,
-                    use_instance_norm=False)
+                    use_instance_norm=False,
+                )
             else:
                 self.output3 = None
 
@@ -1755,7 +1866,9 @@ class MultiScaleDecoder(torch.nn.Module):
             filter_idx = filter_idx + 1
 
             in_channels, skip_channels, out_channels = [
-                n_filters[filter_idx-1], n_skips[filter_idx], n_filters[filter_idx]
+                n_filters[filter_idx - 1],
+                n_skips[filter_idx],
+                n_filters[filter_idx],
             ]
 
             if self.n_resolution > 3:
@@ -1772,7 +1885,8 @@ class MultiScaleDecoder(torch.nn.Module):
                 activation_func=activation_func,
                 use_batch_norm=use_batch_norm,
                 use_instance_norm=use_instance_norm,
-                deconv_type=deconv_type)
+                deconv_type=deconv_type,
+            )
 
             if self.n_resolution > 2:
                 self.output2 = net_utils.Conv2d(
@@ -1783,7 +1897,8 @@ class MultiScaleDecoder(torch.nn.Module):
                     weight_initializer=weight_initializer,
                     activation_func=output_func,
                     use_batch_norm=False,
-                    use_instance_norm=False)
+                    use_instance_norm=False,
+                )
             else:
                 self.output2 = None
 
@@ -1791,7 +1906,9 @@ class MultiScaleDecoder(torch.nn.Module):
             filter_idx = filter_idx + 1
 
             in_channels, skip_channels, out_channels = [
-                n_filters[filter_idx-1], n_skips[filter_idx], n_filters[filter_idx]
+                n_filters[filter_idx - 1],
+                n_skips[filter_idx],
+                n_filters[filter_idx],
             ]
 
             if self.n_resolution > 2:
@@ -1807,7 +1924,8 @@ class MultiScaleDecoder(torch.nn.Module):
             activation_func=activation_func,
             use_batch_norm=use_batch_norm,
             use_instance_norm=use_instance_norm,
-            deconv_type=deconv_type)
+            deconv_type=deconv_type,
+        )
 
         if self.n_resolution > 1:
             self.output1 = net_utils.Conv2d(
@@ -1818,7 +1936,8 @@ class MultiScaleDecoder(torch.nn.Module):
                 weight_initializer=weight_initializer,
                 activation_func=output_func,
                 use_batch_norm=False,
-                use_instance_norm=False)
+                use_instance_norm=False,
+            )
         else:
             self.output1 = None
 
@@ -1826,7 +1945,9 @@ class MultiScaleDecoder(torch.nn.Module):
         filter_idx = filter_idx + 1
 
         in_channels, skip_channels, out_channels = [
-            n_filters[filter_idx-1], n_skips[filter_idx], n_filters[filter_idx]
+            n_filters[filter_idx - 1],
+            n_skips[filter_idx],
+            n_filters[filter_idx],
         ]
 
         if self.n_resolution > 1:
@@ -1840,7 +1961,8 @@ class MultiScaleDecoder(torch.nn.Module):
             activation_func=activation_func,
             use_batch_norm=use_batch_norm,
             use_instance_norm=use_instance_norm,
-            deconv_type=deconv_type)
+            deconv_type=deconv_type,
+        )
 
         self.output0 = net_utils.Conv2d(
             out_channels,
@@ -1850,10 +1972,11 @@ class MultiScaleDecoder(torch.nn.Module):
             weight_initializer=weight_initializer,
             activation_func=output_func,
             use_batch_norm=False,
-            use_instance_norm=False)
+            use_instance_norm=False,
+        )
 
     def forward(self, x, skips, shape=None):
-        '''
+        """
         Forward latent vector x through decoder network
 
         Arg(s):
@@ -1865,7 +1988,7 @@ class MultiScaleDecoder(torch.nn.Module):
                 (height, width) tuple denoting output size
         Returns:
             list[torch.Tensor[float32]] : list of outputs at multiple scales
-        '''
+        """
 
         layers = [x]
         outputs = []
@@ -1899,22 +2022,28 @@ class MultiScaleDecoder(torch.nn.Module):
                 if n > 0:
                     upsample_output3 = torch.nn.functional.interpolate(
                         input=outputs[-1],
-                        size=skips[n-1].shape[-2:],
-                        mode='bilinear',
-                        align_corners=True)
+                        size=skips[n - 1].shape[-2:],
+                        mode="bilinear",
+                        align_corners=True,
+                    )
                 else:
                     upsample_output3 = torch.nn.functional.interpolate(
                         input=outputs[-1],
                         scale_factor=2,
-                        mode='bilinear',
-                        align_corners=True)
+                        mode="bilinear",
+                        align_corners=True,
+                    )
 
             n = n - 1
 
         # Resolution 1/8 -> 1/4
         if self.deconv2 is not None:
             if skips[n] is not None:
-                skip = torch.cat([skips[n], upsample_output3], dim=1) if self.n_resolution > 3 else skips[n]
+                skip = (
+                    torch.cat([skips[n], upsample_output3], dim=1)
+                    if self.n_resolution > 3
+                    else skips[n]
+                )
             else:
                 skip = skips[n]
             layers.append(self.deconv2(layers[-1], skip))
@@ -1926,21 +2055,27 @@ class MultiScaleDecoder(torch.nn.Module):
                 if n > 0:
                     upsample_output2 = torch.nn.functional.interpolate(
                         input=outputs[-1],
-                        size=skips[n-1].shape[-2:],
-                        mode='bilinear',
-                        align_corners=True)
+                        size=skips[n - 1].shape[-2:],
+                        mode="bilinear",
+                        align_corners=True,
+                    )
                 else:
                     upsample_output2 = torch.nn.functional.interpolate(
                         input=outputs[-1],
                         scale_factor=2,
-                        mode='bilinear',
-                        align_corners=True)
+                        mode="bilinear",
+                        align_corners=True,
+                    )
 
             n = n - 1
 
         # Resolution 1/4 -> 1/2
         if skips[n] is not None:
-            skip = torch.cat([skips[n], upsample_output2], dim=1) if self.n_resolution > 2 else skips[n]
+            skip = (
+                torch.cat([skips[n], upsample_output2], dim=1)
+                if self.n_resolution > 2
+                else skips[n]
+            )
         else:
             skip = skips[n]
         layers.append(self.deconv1(layers[-1], skip))
@@ -1952,31 +2087,36 @@ class MultiScaleDecoder(torch.nn.Module):
             if n > 0:
                 upsample_output1 = torch.nn.functional.interpolate(
                     input=outputs[-1],
-                    size=skips[n-1].shape[-2:],
-                    mode='bilinear',
-                    align_corners=True)
+                    size=skips[n - 1].shape[-2:],
+                    mode="bilinear",
+                    align_corners=True,
+                )
             else:
                 upsample_output1 = torch.nn.functional.interpolate(
                     input=outputs[-1],
                     scale_factor=2,
-                    mode='bilinear',
-                    align_corners=True)
+                    mode="bilinear",
+                    align_corners=True,
+                )
 
         # Resolution 1/2 -> 1/1
         n = n - 1
 
-        if 'upsample' in self.output_func:
+        if "upsample" in self.output_func:
             output0 = upsample_output1
         else:
             if self.n_resolution > 1:
                 # If there is skip connection at layer 0
                 if skips[n] is not None and n == 0:
-                    skip = torch.cat([skips[n], upsample_output1], dim=1) if n == 0 else upsample_output1
+                    skip = (
+                        torch.cat([skips[n], upsample_output1], dim=1)
+                        if n == 0
+                        else upsample_output1
+                    )
                 else:
                     skip = upsample_output1
                 layers.append(self.deconv0(layers[-1], skip))
             else:
-
                 if skips[n] is not None and n == 0:
                     layers.append(self.deconv0(layers[-1], skips[n]))
                 else:
@@ -1990,7 +2130,7 @@ class MultiScaleDecoder(torch.nn.Module):
 
 
 class PoseDecoder(torch.nn.Module):
-    '''
+    """
     Pose Decoder 6 DOF
 
     Arg(s):
@@ -2008,16 +2148,18 @@ class PoseDecoder(torch.nn.Module):
             if set, then apply batch normalization
         use_instance_norm : bool
             if set, then apply instance normalization
-    '''
+    """
 
-    def __init__(self,
-                 rotation_parameterization,
-                 input_channels=256,
-                 n_filters=[],
-                 weight_initializer='kaiming_uniform',
-                 activation_func='leaky_relu',
-                 use_batch_norm=False,
-                 use_instance_norm=False):
+    def __init__(
+        self,
+        rotation_parameterization,
+        input_channels=256,
+        n_filters=[],
+        weight_initializer="kaiming_uniform",
+        activation_func="leaky_relu",
+        use_batch_norm=False,
+        use_instance_norm=False,
+    ):
         super(PoseDecoder, self).__init__()
 
         self.rotation_parameterization = rotation_parameterization
@@ -2037,7 +2179,8 @@ class PoseDecoder(torch.nn.Module):
                     weight_initializer=weight_initializer,
                     activation_func=activation_func,
                     use_batch_norm=use_batch_norm,
-                    use_instance_norm=use_instance_norm)
+                    use_instance_norm=use_instance_norm,
+                )
                 layers.append(conv)
                 in_channels = out_channels
 
@@ -2049,7 +2192,8 @@ class PoseDecoder(torch.nn.Module):
                 weight_initializer=weight_initializer,
                 activation_func=None,
                 use_batch_norm=False,
-                use_instance_norm=False)
+                use_instance_norm=False,
+            )
             layers.append(conv)
 
             self.conv = torch.nn.Sequential(*layers)
@@ -2062,21 +2206,22 @@ class PoseDecoder(torch.nn.Module):
                 weight_initializer=weight_initializer,
                 activation_func=None,
                 use_batch_norm=False,
-                use_instance_norm=False)
+                use_instance_norm=False,
+            )
 
     def forward(self, x):
         conv_output = self.conv(x)
         pose_mean = torch.mean(conv_output, [2, 3])
         dof = 0.01 * pose_mean
         posemat = net_utils.pose_matrix(
-            dof,
-            rotation_parameterization=self.rotation_parameterization)
+            dof, rotation_parameterization=self.rotation_parameterization
+        )
 
         return posemat
 
 
 class SparseToDensePool(torch.nn.Module):
-    '''
+    """
     Converts sparse inputs to dense outputs using max and min pooling
     with different kernel sizes and combines them with 1 x 1 convolutions
 
@@ -2095,27 +2240,25 @@ class SparseToDensePool(torch.nn.Module):
             kaiming_normal, kaiming_uniform, xavier_normal, xavier_uniform
         activation_func : func
             activation function after convolution
-    '''
+    """
 
-    def __init__(self,
-                 input_channels,
-                 min_pool_sizes=[3, 5, 7, 9],
-                 max_pool_sizes=[3, 5, 7, 9],
-                 n_filter=8,
-                 n_convolution=3,
-                 weight_initializer='kaiming_uniform',
-                 activation_func='leaky_relu'):
+    def __init__(
+        self,
+        input_channels,
+        min_pool_sizes=[3, 5, 7, 9],
+        max_pool_sizes=[3, 5, 7, 9],
+        n_filter=8,
+        n_convolution=3,
+        weight_initializer="kaiming_uniform",
+        activation_func="leaky_relu",
+    ):
         super(SparseToDensePool, self).__init__()
 
         activation_func = net_utils.activation_func(activation_func)
 
-        self.min_pool_sizes = [
-            s for s in min_pool_sizes if s > 1
-        ]
+        self.min_pool_sizes = [s for s in min_pool_sizes if s > 1]
 
-        self.max_pool_sizes = [
-            s for s in max_pool_sizes if s > 1
-        ]
+        self.max_pool_sizes = [s for s in max_pool_sizes if s > 1]
 
         # Construct min pools
         self.min_pools = []
@@ -2145,7 +2288,8 @@ class SparseToDensePool(torch.nn.Module):
                 weight_initializer=weight_initializer,
                 activation_func=activation_func,
                 use_batch_norm=False,
-                use_instance_norm=False)
+                use_instance_norm=False,
+            )
             pool_convs.append(conv)
 
             # Set new input channels as output channels
@@ -2163,7 +2307,8 @@ class SparseToDensePool(torch.nn.Module):
             weight_initializer=weight_initializer,
             activation_func=activation_func,
             use_batch_norm=False,
-            use_instance_norm=False)
+            use_instance_norm=False,
+        )
 
     def forward(self, x):
         # Input depth

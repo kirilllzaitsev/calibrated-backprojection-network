@@ -1,4 +1,4 @@
-'''
+"""
 Author: Alex Wong <alexw@cs.ucla.edu>
 
 If you use this code, please cite the following paper:
@@ -13,7 +13,7 @@ https://arxiv.org/pdf/2108.10531.pdf
   pages={12747--12756},
   year={2021}
 }
-'''
+"""
 import torch
 
 
@@ -21,7 +21,7 @@ EPSILON = 1e-8
 
 
 def color_consistency_loss_func(src, tgt, w, use_pytorch_impl=False):
-    '''
+    """
     Computes the color consistency loss
 
     Arg(s):
@@ -33,14 +33,15 @@ def color_consistency_loss_func(src, tgt, w, use_pytorch_impl=False):
             N x 1 x H x W weights
     Returns:
         torch.Tensor[float32] : mean absolute difference between source and target images
-    '''
+    """
 
     loss = torch.sum(w * torch.abs(tgt - src), dim=[1, 2, 3])
 
     return torch.mean(loss / torch.sum(w, dim=[1, 2, 3]))
 
+
 def structural_consistency_loss_func(src, tgt, w):
-    '''
+    """
     Computes the structural consistency loss using SSIM
 
     Arg(s):
@@ -52,16 +53,17 @@ def structural_consistency_loss_func(src, tgt, w):
             N x 3 x H x W weights
     Returns:
         torch.Tensor[float32] : mean 1 - SSIM scores between source and target images
-    '''
+    """
 
     scores = ssim(src, tgt)
-    scores = torch.nn.functional.interpolate(scores, size=w.shape[2:4], mode='nearest')
+    scores = torch.nn.functional.interpolate(scores, size=w.shape[2:4], mode="nearest")
     loss = torch.sum(w * scores, dim=[1, 2, 3])
 
     return torch.mean(loss / torch.sum(w, dim=[1, 2, 3]))
 
+
 def sparse_depth_consistency_loss_func(src, tgt, w):
-    '''
+    """
     Computes the sparse depth consistency loss
 
     Arg(s):
@@ -73,15 +75,16 @@ def sparse_depth_consistency_loss_func(src, tgt, w):
             N x 1 x H x W weights
     Returns:
         torch.Tensor[float32] : mean absolute difference between source and target depth
-    '''
+    """
 
     delta = torch.abs(tgt - src)
     loss = torch.sum(w * delta, dim=[1, 2, 3])
 
     return torch.mean(loss / torch.sum(w, dim=[1, 2, 3]))
 
+
 def smoothness_loss_func(predict, image):
-    '''
+    """
     Computes the local smoothness loss
 
     Arg(s):
@@ -91,7 +94,7 @@ def smoothness_loss_func(predict, image):
             N x 3 x H x W RGB image
     Returns:
         torch.Tensor[float32] : mean SSIM distance between source and target images
-    '''
+    """
 
     predict_dy, predict_dx = gradient_yx(predict)
     image_dy, image_dx = gradient_yx(image)
@@ -106,11 +109,13 @@ def smoothness_loss_func(predict, image):
     return smoothness_x + smoothness_y
 
 
-'''
+"""
 Helper functions for constructing loss functions
-'''
+"""
+
+
 def gradient_yx(T):
-    '''
+    """
     Computes gradients in the y and x directions
 
     Arg(s):
@@ -119,14 +124,15 @@ def gradient_yx(T):
     Returns:
         torch.Tensor[float32] : gradients in y direction
         torch.Tensor[float32] : gradients in x direction
-    '''
+    """
 
     dx = T[:, :, :, :-1] - T[:, :, :, 1:]
     dy = T[:, :, :-1, :] - T[:, :, 1:, :]
     return dy, dx
 
+
 def ssim(x, y):
-    '''
+    """
     Computes Structural Similarity Index distance between two images
 
     Arg(s):
@@ -136,22 +142,22 @@ def ssim(x, y):
             N x 3 x H x W RGB image
     Returns:
         torch.Tensor[float32] : SSIM distance between two images
-    '''
+    """
 
-    C1 = 0.01 ** 2
-    C2 = 0.03 ** 2
+    C1 = 0.01**2
+    C2 = 0.03**2
 
     mu_x = torch.nn.AvgPool2d(3, 1)(x)
     mu_y = torch.nn.AvgPool2d(3, 1)(y)
     mu_xy = mu_x * mu_y
-    mu_xx = mu_x ** 2
-    mu_yy = mu_y ** 2
+    mu_xx = mu_x**2
+    mu_yy = mu_y**2
 
-    sigma_x = torch.nn.AvgPool2d(3, 1)(x ** 2) - mu_xx
-    sigma_y = torch.nn.AvgPool2d(3, 1)(y ** 2) - mu_yy
+    sigma_x = torch.nn.AvgPool2d(3, 1)(x**2) - mu_xx
+    sigma_y = torch.nn.AvgPool2d(3, 1)(y**2) - mu_yy
     sigma_xy = torch.nn.AvgPool2d(3, 1)(x * y) - mu_xy
 
-    numer = (2 * mu_xy + C1)*(2 * sigma_xy + C2)
+    numer = (2 * mu_xy + C1) * (2 * sigma_xy + C2)
     denom = (mu_xx + mu_yy + C1) * (sigma_x + sigma_y + C2)
     score = numer / denom
 

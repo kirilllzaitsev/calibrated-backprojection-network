@@ -1,4 +1,4 @@
-'''
+"""
 Author: Alex Wong <alexw@cs.ucla.edu>
 
 If you use this code, please cite the following paper:
@@ -13,14 +13,14 @@ https://arxiv.org/pdf/2108.10531.pdf
   pages={12747--12756},
   year={2021}
 }
-'''
+"""
 import numpy as np
 import torch.utils.data
 from kbnet import data_utils
 
 
 def load_image_triplet(path, normalize=True):
-    '''
+    """
     Load images from image triplet
 
     Arg(s):
@@ -32,21 +32,19 @@ def load_image_triplet(path, normalize=True):
         numpy[float32] : image at time t (C x H x W)
         numpy[float32] : image at time t-1 (C x H x W)
         numpy[float32] : image at time t+1 (C x H x W)
-    '''
+    """
 
     # Load image triplet and split into images at t-1, t, t+1
-    images = data_utils.load_image(
-        path,
-        normalize=normalize,
-        data_format='CHW')
+    images = data_utils.load_image(path, normalize=normalize, data_format="CHW")
 
     # Split along width
     image1, image0, image2 = np.split(images, indices_or_sections=3, axis=-1)
 
     return image1, image0, image2
 
+
 def load_depth(depth_path):
-    '''
+    """
     Load depth
 
     Arg(s):
@@ -54,12 +52,13 @@ def load_depth(depth_path):
             path to depth map
     Return:
         numpy[float32] : depth map (1 x H x W)
-    '''
+    """
 
-    return data_utils.load_depth(depth_path, data_format='CHW')
+    return data_utils.load_depth(depth_path, data_format="CHW")
+
 
 def load_validity_map(validity_map_path):
-    '''
+    """
     Load validity map
 
     Arg(s):
@@ -67,12 +66,13 @@ def load_validity_map(validity_map_path):
             path to validity map
     Returns:
         numpy[float32] : validity map (1 x H x W)
-    '''
+    """
 
-    return data_utils.load_validity_map(validity_map_path, data_format='CHW')
+    return data_utils.load_validity_map(validity_map_path, data_format="CHW")
 
-def random_crop(inputs, shape, intrinsics=None, crop_type=['none']):
-    '''
+
+def random_crop(inputs, shape, intrinsics=None, crop_type=["none"]):
+    """
     Apply crop to inputs e.g. images, depth and if available adjust camera intrinsics
 
     Arg(s):
@@ -87,7 +87,7 @@ def random_crop(inputs, shape, intrinsics=None, crop_type=['none']):
     Return:
         list[numpy[float32]] : list of cropped inputs
         numpy[float32] : if given, 3 x 3 adjusted camera intrinsics matrix
-    '''
+    """
 
     n_height, n_width = shape
     _, o_height, o_width = inputs[0].shape
@@ -100,18 +100,13 @@ def random_crop(inputs, shape, intrinsics=None, crop_type=['none']):
     y_start = d_height // 2
     x_start = d_width // 2
 
-    if 'horizontal' in crop_type:
-
+    if "horizontal" in crop_type:
         # Select from one of the pre-defined anchored locations
-        if 'anchored' in crop_type:
+        if "anchored" in crop_type:
             # Create anchor positions
-            crop_anchors = [
-                0.0, 0.50, 1.0
-            ]
+            crop_anchors = [0.0, 0.50, 1.0]
 
-            widths = [
-                anchor * d_width for anchor in crop_anchors
-            ]
+            widths = [anchor * d_width for anchor in crop_anchors]
             x_start = int(widths[np.random.randint(low=0, high=len(widths))])
 
         # Randomly select a crop location
@@ -119,21 +114,16 @@ def random_crop(inputs, shape, intrinsics=None, crop_type=['none']):
             x_start = np.random.randint(low=0, high=d_width)
 
     # If bottom alignment, then set starting height to bottom position
-    if 'bottom' in crop_type:
+    if "bottom" in crop_type:
         y_start = d_height
 
-    elif 'vertical' in crop_type and np.random.rand() <= 0.30:
-
+    elif "vertical" in crop_type and np.random.rand() <= 0.30:
         # Select from one of the pre-defined anchored locations
-        if 'anchored' in crop_type:
+        if "anchored" in crop_type:
             # Create anchor positions
-            crop_anchors = [
-                0.50, 1.0
-            ]
+            crop_anchors = [0.50, 1.0]
 
-            heights = [
-                anchor * d_height for anchor in crop_anchors
-            ]
+            heights = [anchor * d_height for anchor in crop_anchors]
             y_start = int(heights[np.random.randint(low=0, high=len(heights))])
 
         # Randomly select a crop location
@@ -143,15 +133,15 @@ def random_crop(inputs, shape, intrinsics=None, crop_type=['none']):
     # Crop each input into (n_height, n_width)
     y_end = y_start + n_height
     x_end = x_start + n_width
-    outputs = [
-        T[:, y_start:y_end, x_start:x_end] for T in inputs
-    ]
+    outputs = [T[:, y_start:y_end, x_start:x_end] for T in inputs]
 
     if intrinsics is not None:
         # Adjust intrinsics
-        intrinsics = intrinsics + [[0.0, 0.0, -x_start],
-                                   [0.0, 0.0, -y_start],
-                                   [0.0, 0.0, 0.0     ]]
+        intrinsics = intrinsics + [
+            [0.0, 0.0, -x_start],
+            [0.0, 0.0, -y_start],
+            [0.0, 0.0, 0.0],
+        ]
 
         return outputs, intrinsics
     else:
@@ -159,7 +149,7 @@ def random_crop(inputs, shape, intrinsics=None, crop_type=['none']):
 
 
 class KBNetTrainingDataset(torch.utils.data.Dataset):
-    '''
+    """
     Dataset for fetching:
         (1) image at time t-1, t, and t+1
         (2) sparse depth
@@ -176,22 +166,24 @@ class KBNetTrainingDataset(torch.utils.data.Dataset):
             shape (height, width) to crop inputs
         random_crop_type : list[str]
             none, horizontal, vertical, anchored, bottom
-    '''
+    """
 
-    def __init__(self,
-                 image_paths,
-                 sparse_depth_paths,
-                 intrinsics_paths,
-                 shape=None,
-                 random_crop_type=['none']):
-
+    def __init__(
+        self,
+        image_paths,
+        sparse_depth_paths,
+        intrinsics_paths,
+        shape=None,
+        random_crop_type=["none"],
+    ):
         self.image_paths = image_paths
         self.sparse_depth_paths = sparse_depth_paths
         self.intrinsics_paths = intrinsics_paths
 
         self.shape = shape
-        self.do_random_crop = \
-            self.shape is not None and all([x > 0 for x in self.shape])
+        self.do_random_crop = self.shape is not None and all(
+            [x > 0 for x in self.shape]
+        )
 
         # Augmentation
         self.random_crop_type = random_crop_type
@@ -199,8 +191,8 @@ class KBNetTrainingDataset(torch.utils.data.Dataset):
     def __getitem__(self, index):
         # Load image
         image1, image0, image2 = load_image_triplet(
-            self.image_paths[index],
-            normalize=False)
+            self.image_paths[index], normalize=False
+        )
 
         # Load depth
         sparse_depth0 = load_depth(self.sparse_depth_paths[index])
@@ -214,7 +206,8 @@ class KBNetTrainingDataset(torch.utils.data.Dataset):
                 inputs=[image0, image1, image2, sparse_depth0],
                 shape=self.shape,
                 intrinsics=intrinsics,
-                crop_type=self.random_crop_type)
+                crop_type=self.random_crop_type,
+            )
 
         # Convert to float32
         image0, image1, image2, sparse_depth0, intrinsics = [
@@ -229,7 +222,7 @@ class KBNetTrainingDataset(torch.utils.data.Dataset):
 
 
 class KBNetInferenceDataset(torch.utils.data.Dataset):
-    '''
+    """
     Dataset for fetching:
         (1) image
         (2) sparse depth
@@ -242,14 +235,11 @@ class KBNetInferenceDataset(torch.utils.data.Dataset):
             paths to sparse depth maps
         intrinsics_paths : list[str]
             paths to 3 x 3 camera intrinsics matrix
-    '''
+    """
 
-    def __init__(self,
-                 image_paths,
-                 sparse_depth_paths,
-                 intrinsics_paths,
-                 use_image_triplet=True):
-
+    def __init__(
+        self, image_paths, sparse_depth_paths, intrinsics_paths, use_image_triplet=True
+    ):
         self.image_paths = image_paths
         self.sparse_depth_paths = sparse_depth_paths
         self.intrinsics_paths = intrinsics_paths
@@ -259,14 +249,11 @@ class KBNetInferenceDataset(torch.utils.data.Dataset):
     def __getitem__(self, index):
         # Load image
         if self.use_image_triplet:
-            _, image, _ = load_image_triplet(
-                self.image_paths[index],
-                normalize=False)
+            _, image, _ = load_image_triplet(self.image_paths[index], normalize=False)
         else:
             image = data_utils.load_image(
-                self.image_paths[index],
-                normalize=False,
-                data_format='CHW')
+                self.image_paths[index], normalize=False, data_format="CHW"
+            )
 
         # Load depth
         sparse_depth = load_depth(self.sparse_depth_paths[index])
@@ -276,8 +263,7 @@ class KBNetInferenceDataset(torch.utils.data.Dataset):
 
         # Convert to float32
         image, sparse_depth, intrinsics = [
-            T.astype(np.float32)
-            for T in [image, sparse_depth, intrinsics]
+            T.astype(np.float32) for T in [image, sparse_depth, intrinsics]
         ]
 
         return image, sparse_depth, intrinsics
