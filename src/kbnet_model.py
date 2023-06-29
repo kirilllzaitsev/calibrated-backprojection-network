@@ -182,8 +182,8 @@ class KBNetModel(object):
 
         return output_depth
 
+    @staticmethod
     def compute_loss(
-        self,
         image0,
         image1,
         image2,
