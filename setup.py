@@ -15,8 +15,6 @@ setup(
     description='Calibrated Backprojection Network (KBNet)',
     license='Academic Software License',
     url='https://github.com/alexklwong/calibrated-backprojection-network',
-    package_dir={"kbnet": "src"},
-    package_data={"": ["."]},
     packages=['kbnet'],
     zip_safe=False
 )
